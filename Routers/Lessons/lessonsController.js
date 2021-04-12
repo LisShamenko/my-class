@@ -1,9 +1,11 @@
 let koaRouter;
 let routersHelper;
+let testDB;
 
-module.exports = (inKoaRouter, inRoutersHelper) => {
+module.exports = (inKoaRouter, inRoutersHelper, inTestDB) => {
     koaRouter = inKoaRouter;
     routersHelper = inRoutersHelper;
+    testDB = inTestDB;
 
     return {
         initController: initController,
@@ -15,7 +17,8 @@ function initController() {
     const actionsRouter = koaRouter();
     actionsRouter
         .get('/', getLessons)
-        .post('/lessons', createLessons);
+        .post('/lessons', createLessons)
+        .get('/test', test1);
 
     // 
     return {
@@ -25,13 +28,58 @@ function initController() {
     };
 }
 
+// -------------------------------------------------------- TEST
+
+async function test1(ctx, next) {
+
+    console.log("1");
+
+    testDB.Students.findOne({ where: { name: "Ivan" } })
+        .then(student => {
+            if (!student) return;
+            student.getLessons().then(lessons => {
+                for (lesson of lessons) {
+                    console.log(lesson.title);
+                }
+            });
+        });
+
+    testDB.Students.findOne({ where: { name: "Ivan" } })
+        .then(student => {
+            if (!student) return;
+            testDB.Lessons.findOne({ where: { name: "удалить" } })
+                .then(lesson => {
+                    if (!lesson) return;
+                    student.addCourse(lesson, { through: { visit: true } });
+                });
+        });
+
+    testDB.Students.create({ name: "Tom" })
+        .then(res => {
+            console.log(res);
+        })
+        .catch(err => {
+            console.log(err)
+        });
+
+    testDB.Lessons.create({ date: Date.now(), title: "удалить", status: 0 })
+        .then(res => {
+            console.log(res);
+        })
+        .catch(err => {
+            console.log(err)
+        });
+}
+
+// --------------------------------------------------------
+
 // 
 async function getLessons(ctx, next) {
     let reqParams = ctx.request.query;
 
     // 
     let dates = reqParams.date.split(',');
-    if (dates.length === 0 || 
+    if (dates.length === 0 ||
         dates.every(item => routersHelper.dateRegExp.test(item)) !== true) {
         console.log("invalidate");
     }
