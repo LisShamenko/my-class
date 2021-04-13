@@ -1,11 +1,11 @@
 let koaRouter;
 let routersHelper;
-let testDB;
+let lessonsModels;
 
-module.exports = (inKoaRouter, inRoutersHelper, inTestDB) => {
+module.exports = (inKoaRouter, inRoutersHelper, inLessonsModels) => {
     koaRouter = inKoaRouter;
     routersHelper = inRoutersHelper;
-    testDB = inTestDB;
+    lessonsModels = inLessonsModels;
 
     return {
         initController: initController,
@@ -32,43 +32,8 @@ function initController() {
 
 async function test1(ctx, next) {
 
-    console.log("1");
 
-    testDB.Students.findOne({ where: { name: "Ivan" } })
-        .then(student => {
-            if (!student) return;
-            student.getLessons().then(lessons => {
-                for (lesson of lessons) {
-                    console.log(lesson.title);
-                }
-            });
-        });
 
-    testDB.Students.findOne({ where: { name: "Ivan" } })
-        .then(student => {
-            if (!student) return;
-            testDB.Lessons.findOne({ where: { name: "удалить" } })
-                .then(lesson => {
-                    if (!lesson) return;
-                    student.addCourse(lesson, { through: { visit: true } });
-                });
-        });
-
-    testDB.Students.create({ name: "Tom" })
-        .then(res => {
-            console.log(res);
-        })
-        .catch(err => {
-            console.log(err)
-        });
-
-    testDB.Lessons.create({ date: Date.now(), title: "удалить", status: 0 })
-        .then(res => {
-            console.log(res);
-        })
-        .catch(err => {
-            console.log(err)
-        });
 }
 
 // --------------------------------------------------------
@@ -79,29 +44,43 @@ async function getLessons(ctx, next) {
 
     // 
     let dates = reqParams.date.split(',');
-    if (dates.length === 0 ||
-        dates.every(item => routersHelper.dateRegExp.test(item)) !== true) {
-        console.log("invalidate");
+    for (let i = 0; i < dates.length; ) {
+        const date = dates[i];
+        if (routersHelper.dateRegExp.test(date) !== true) {
+            dates.splice(i, 1);
+        }
+        else {
+            i++;
+        }
     }
 
     // 
-    let lessonsPerPage = Number(reqParams.lessonsPerPage);
-    let page = Number(reqParams.page);
-    let status = Number(reqParams.status);
-    let studentsCount = Number(reqParams.studentsCount);
-    if (Number.isNaN(lessonsPerPage) || Number.isNaN(page) || Number.isNaN(status) || Number.isNaN(studentsCount)) {
-        console.log("invalidate");
+    let teacherIds;
+    if (reqParams.teacherIds !== undefined) {
+        teacherIds = reqParams.teacherIds.split(',');
+        if (teacherIds.length === 0) {
+            teacherIds = undefined;
+        }
     }
 
     // 
-    let teacherIds = reqParams.teacherIds.split(',');
-    if (teacherIds.length === 0) {
-        console.log("invalidate");
-    }
-
-    console.log("1");
-    await next();
-    console.log("2");
+    await lessonsModels.getLessons(
+        {
+            startDate: (dates.length > 0) ? dates[0] : undefined,
+            endDate: (dates.length > 1) ? dates[1] : undefined,
+            status: routersHelper.parseNumberWithDefault(reqParams.status, undefined),
+            teacherIds: teacherIds,
+            studentsCount: routersHelper.parseNumberWithDefault(reqParams.studentsCount, undefined),
+            page: routersHelper.parseNumberWithDefault(reqParams.page, 1),
+            lessonsPerPage: routersHelper.parseNumberWithDefault(reqParams.lessonsPerPage, 5),
+        })
+        .then(lessons => {
+            for (lesson of lessons) {
+                console.log(`ID=${lesson.id} --- COUNT=${lesson.dataValues.count}`);
+            }
+            ctx.body = lessons;
+            next();
+        });
 }
 
 // 

@@ -38,8 +38,11 @@ Lessons.belongsToMany(Students, { through: LessonStudents, foreignKey: 'student_
 Students.belongsToMany(Lessons, { through: LessonStudents, foreignKey: 'lesson_id' });
 
 const LessonTeachers = require("./Database/Models/LessonTeachers")(Sequelize, sequelize);
-Lessons.belongsToMany(Teachers, { through: LessonTeachers });
-Teachers.belongsToMany(Lessons, { through: LessonTeachers });
+Lessons.belongsToMany(Teachers, { through: LessonTeachers, foreignKey: 'teacher_id' });
+Teachers.belongsToMany(Lessons, { through: LessonTeachers, foreignKey: 'lesson_id' });
+
+Lessons.hasMany(LessonStudents, { as: 'Students', foreignKey: 'lesson_id' });
+Lessons.hasMany(LessonTeachers, { as: 'Teachers', foreignKey: 'lesson_id' });
 
 
 // test
@@ -49,6 +52,8 @@ let testDB = {
     LessonTeachers: LessonTeachers,
     Students: Students,
     Teachers: Teachers,
+    Sequelize: Sequelize,
+    sequelize: sequelize,
 };
 
 // refactoring - сделать ожидание при запуске, не запускать приложение пока не запустится sequelize
@@ -60,6 +65,12 @@ sequelize.sync()
         console.log(err);
     });
 
+// --- buisness-models
+
+const lessonsModels = require('./Routers/Models/lessonsModels')
+    (Sequelize, sequelize, testDB);
+
+
 // --- routers
 
 const koaRouter = require('@koa/router');
@@ -68,7 +79,7 @@ const routersHelper = require('./Routers/routersHelper')
 
 // 
 const lessonsController = require('./Routers/Lessons/lessonsController')
-    (koaRouter, routersHelper, testDB);
+    (koaRouter, routersHelper, lessonsModels);
 let lessonsControllerResult = lessonsController.initController();
 app.use(lessonsControllerResult.router.routes());
 
