@@ -34,27 +34,19 @@ const Teachers = require("./Database/Models/Teachers")(Sequelize, sequelize);
 
 // создание связей
 const LessonStudents = require("./Database/Models/LessonStudents")(Sequelize, sequelize);
-Lessons.belongsToMany(Students, { through: LessonStudents, foreignKey: 'student_id' });
-Students.belongsToMany(Lessons, { through: LessonStudents, foreignKey: 'lesson_id' });
+Lessons.belongsToMany(Students, { through: LessonStudents, foreignKey: 'lesson_id' });
+Students.belongsToMany(Lessons, { through: LessonStudents, foreignKey: 'student_id' });
 
 const LessonTeachers = require("./Database/Models/LessonTeachers")(Sequelize, sequelize);
-Lessons.belongsToMany(Teachers, { through: LessonTeachers, foreignKey: 'teacher_id' });
-Teachers.belongsToMany(Lessons, { through: LessonTeachers, foreignKey: 'lesson_id' });
+Lessons.belongsToMany(Teachers, { through: LessonTeachers, foreignKey: 'lesson_id' });
+Teachers.belongsToMany(Lessons, { through: LessonTeachers, foreignKey: 'teacher_id' });
 
-Lessons.hasMany(LessonStudents, { as: 'Students', foreignKey: 'lesson_id' });
-Lessons.hasMany(LessonTeachers, { as: 'Teachers', foreignKey: 'lesson_id' });
+Lessons.hasMany(LessonStudents, { as: 'LessonStudents', foreignKey: 'lesson_id' });
+Lessons.hasMany(LessonTeachers, { as: 'LessonTeachers', foreignKey: 'lesson_id' });
 
+Students.hasMany(LessonStudents, { as: 'LessonStudents', foreignKey: 'student_id' });
+Teachers.hasMany(LessonTeachers, { as: 'LessonTeachers', foreignKey: 'teacher_id' });
 
-// test
-let testDB = {
-    Lessons: Lessons,
-    LessonStudents: LessonStudents,
-    LessonTeachers: LessonTeachers,
-    Students: Students,
-    Teachers: Teachers,
-    Sequelize: Sequelize,
-    sequelize: sequelize,
-};
 
 // refactoring - сделать ожидание при запуске, не запускать приложение пока не запустится sequelize
 sequelize.sync()
@@ -68,8 +60,7 @@ sequelize.sync()
 // --- buisness-models
 
 const lessonsModels = require('./Routers/Models/lessonsModels')
-    (Sequelize, sequelize, testDB);
-
+    (Sequelize, sequelize);
 
 // --- routers
 
@@ -82,50 +73,6 @@ const lessonsController = require('./Routers/Lessons/lessonsController')
     (koaRouter, routersHelper, lessonsModels);
 let lessonsControllerResult = lessonsController.initController();
 app.use(lessonsControllerResult.router.routes());
-
-/* 
-
-// router
-const koaRouter = require('@koa/router');
-const router = koaRouter();
-router.get('/', getLessons).post('/lessons', createLessons);
-app.use(router.routes());
-
-// 
-async function getLessons(ctx, next) {
-    console.log("1");
-    await next();
-    console.log("2");
-}
-
-// 
-async function createLessons(ctx, next) {
-    console.log("1");
-    await next();
-    console.log("2");
-}
-
-// logger
-app.use(async (ctx, next) => {
-    await next();
-    const rt = ctx.response.get('X-Response-Time');
-    console.log(`${ctx.method} ${ctx.url} - ${rt}`);
-});
-
-// x-response-time
-app.use(async (ctx, next) => {
-    const start = Date.now();
-    await next();
-    const ms = Date.now() - start;
-    ctx.set('X-Response-Time', `${ms}ms`);
-});
-
-// response
-app.use(async ctx => {
-    ctx.body = 'Hello World';
-});
-
-*/
 
 // 
 let PORT = 3000;

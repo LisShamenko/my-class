@@ -44,7 +44,7 @@ async function getLessons(ctx, next) {
 
     // 
     let dates = reqParams.date.split(',');
-    for (let i = 0; i < dates.length; ) {
+    for (let i = 0; i < dates.length;) {
         const date = dates[i];
         if (routersHelper.dateRegExp.test(date) !== true) {
             dates.splice(i, 1);
@@ -64,7 +64,8 @@ async function getLessons(ctx, next) {
     }
 
     // 
-    await lessonsModels.getLessons(
+    let result = {};
+    await lessonsModels.getLessonsIDs(
         {
             startDate: (dates.length > 0) ? dates[0] : undefined,
             endDate: (dates.length > 1) ? dates[1] : undefined,
@@ -74,12 +75,31 @@ async function getLessons(ctx, next) {
             page: routersHelper.parseNumberWithDefault(reqParams.page, 1),
             lessonsPerPage: routersHelper.parseNumberWithDefault(reqParams.lessonsPerPage, 5),
         })
-        .then(lessons => {
-            for (lesson of lessons) {
-                console.log(`ID=${lesson.id} --- COUNT=${lesson.dataValues.count}`);
+        .then(lessonsIDs => {
+            console.log('1.1');
+
+            // 
+            result.lessonsIDs = [];
+            for (let lesson of lessonsIDs) {
+                result.lessonsIDs.push({
+                    id: lesson.id,
+                    count: lesson.dataValues.count
+                });
             }
-            ctx.body = lessons;
-            next();
+        })
+        .catch(err => {
+            console.log('1.1 - error');
+            ctx.throw(400, err);
+        });
+
+    // 
+    await lessonsModels.getLessons(result.lessonsIDs)
+        .then(result => {
+            ctx.response.body =  JSON.stringify(result);
+            ctx.response.type = 'application/json';
+        })
+        .catch(err => {
+            ctx.throw(400, err);
         });
 }
 
