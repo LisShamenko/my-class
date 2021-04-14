@@ -30,34 +30,14 @@ function initController() {
 
 // -------------------------------------------------------- TEST
 
-async function test1(ctx, next) {}
+async function test1(ctx, next) { }
 
 // --------------------------------------------------------
 
 // 
 async function getLessons(ctx, next) {
     let reqParams = ctx.request.query;
-
-    // 
-    let dates = reqParams.date.split(',');
-    for (let i = 0; i < dates.length;) {
-        const date = dates[i];
-        if (routersHelper.dateRegExp.test(date) !== true) {
-            dates.splice(i, 1);
-        }
-        else {
-            i++;
-        }
-    }
-
-    // 
-    let teacherIds;
-    if (reqParams.teacherIds !== undefined) {
-        teacherIds = reqParams.teacherIds.split(',');
-        if (teacherIds.length === 0) {
-            teacherIds = undefined;
-        }
-    }
+    let dates = routersHelper.parseStringToDates(reqParams.date);
 
     // 
     let result = {};
@@ -66,7 +46,7 @@ async function getLessons(ctx, next) {
             startDate: (dates.length > 0) ? dates[0] : undefined,
             endDate: (dates.length > 1) ? dates[1] : undefined,
             status: routersHelper.parseNumberWithDefault(reqParams.status, undefined),
-            teacherIds: teacherIds,
+            teacherIds: routersHelper.parseStringToTeachers(reqParams.teacherIds),
             studentsCount: routersHelper.parseNumberWithDefault(reqParams.studentsCount, undefined),
             page: routersHelper.parseNumberWithDefault(reqParams.page, 1),
             lessonsPerPage: routersHelper.parseNumberWithDefault(reqParams.lessonsPerPage, 5),

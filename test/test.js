@@ -1,5 +1,7 @@
 const assert = require('assert');
 
+// refactoring - раскидать по модулям
+
 // -------------------------------
 
 const daysHelper = require('./../Routers/Models/daysHelper')();
@@ -34,7 +36,7 @@ describe('Days Helper', () => {
             assert.strictEqual((new Date('2021-04-23T00:00:00')).toString(), dh.nextDay().toString());
             assert.strictEqual((new Date('2021-04-26T00:00:00')).toString(), dh.nextDay().toString());
             assert.strictEqual((new Date('2021-04-27T00:00:00')).toString(), dh.nextDay().toString());
-        });        
+        });
     });
 });
 
@@ -62,3 +64,43 @@ describe('Days Counter', () => {
         });
     });
 });
+
+// -------------------------------
+
+const routersHelper = require('./../Routers/routersHelper')();
+
+describe('Routers Helper', () => {
+    describe('Валидация', () => {
+        it('Регулярка для дат.', () => {
+            assert.strictEqual(true, routersHelper.dateRegExp.test('2021-04-14'));
+            assert.strictEqual(false, routersHelper.dateRegExp.test('date'));
+        });
+        it('Парсинг чисел.', () => {
+            assert.strictEqual(0, routersHelper.parseNumberWithDefault('0', 100));
+            assert.strictEqual(100, routersHelper.parseNumberWithDefault('', 100));
+            assert.strictEqual(100, routersHelper.parseNumberWithDefault('date', 100));
+            assert.strictEqual(0, routersHelper.parseNumberWithDefault('0', undefined));
+            assert.strictEqual(undefined, routersHelper.parseNumberWithDefault('', undefined));
+            assert.strictEqual(undefined, routersHelper.parseNumberWithDefault('date', undefined));
+        });
+        it('Парсинг строки с датами.', () => {
+            assert.deepStrictEqual(['2021-04-14'], routersHelper.parseStringToDates('2021-04-14'));
+            assert.deepStrictEqual(['2021-04-14', '2021-04-15'], routersHelper.parseStringToDates('2021-04-14,2021-04-15'));
+            assert.deepStrictEqual(['2021-04-14', '2021-04-15'], routersHelper.parseStringToDates('2021-04-14,date,2021-04-15'));
+        });
+        it('Парсинг строки с идентификаторами.', () => {
+            assert.strictEqual(undefined, routersHelper.parseStringToTeachers(undefined));
+            assert.deepStrictEqual(undefined, routersHelper.parseStringToTeachers(''));
+            assert.deepStrictEqual([1], routersHelper.parseStringToTeachers('1'));
+            assert.deepStrictEqual([1, 2], routersHelper.parseStringToTeachers('1,2'));
+            assert.deepStrictEqual([1, 2], routersHelper.parseStringToTeachers('1,date,2'));
+            assert.deepStrictEqual(undefined, routersHelper.parseStringToTeachers('date,date'));
+        });
+    });
+});
+
+
+
+
+
+
