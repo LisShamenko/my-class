@@ -30,11 +30,7 @@ function initController() {
 
 // -------------------------------------------------------- TEST
 
-async function test1(ctx, next) {
-
-
-
-}
+async function test1(ctx, next) {}
 
 // --------------------------------------------------------
 
@@ -76,9 +72,6 @@ async function getLessons(ctx, next) {
             lessonsPerPage: routersHelper.parseNumberWithDefault(reqParams.lessonsPerPage, 5),
         })
         .then(lessonsIDs => {
-            console.log('1.1');
-
-            // 
             result.lessonsIDs = [];
             for (let lesson of lessonsIDs) {
                 result.lessonsIDs.push({
@@ -88,14 +81,13 @@ async function getLessons(ctx, next) {
             }
         })
         .catch(err => {
-            console.log('1.1 - error');
             ctx.throw(400, err);
         });
 
     // 
     await lessonsModels.getLessons(result.lessonsIDs)
         .then(result => {
-            ctx.response.body =  JSON.stringify(result);
+            ctx.response.body = JSON.stringify(result);
             ctx.response.type = 'application/json';
         })
         .catch(err => {
@@ -106,34 +98,43 @@ async function getLessons(ctx, next) {
 // 
 async function createLessons(ctx, next) {
     const bodyParams = ctx.request.body;
+    const queryObj = {
+        teacherIds: bodyParams.teacherIds
+    };
 
     // 
-    let teacherIds = bodyParams.teacherIds;
-    if (teacherIds.length === 0) {
-        console.log("invalidate");
+    queryObj.title = bodyParams.title;
+    if (!queryObj.title) {
+        ctx.throw(400, err);
     }
 
     // 
-    let title = bodyParams.title;
-    if (!title) {
-        console.log("invalidate");
+    queryObj.days = bodyParams.days;
+    if (queryObj.days === undefined || queryObj.days.length === 0) {
+        ctx.throw(400, err);
     }
 
     // 
-    let days = bodyParams.days;
-    let lessonsCount = bodyParams.lessonsCount;
-    if (days.length === 0 || lessonsCount === 0) {
-        console.log("invalidate");
+    queryObj.firstDate = bodyParams.firstDate;
+    if (!routersHelper.dateRegExp.test(queryObj.firstDate)) {
+        ctx.throw(400, err);
     }
 
     // 
-    let firstDate = bodyParams.firstDate;
-    let lastDate = bodyParams.lastDate;
-    if (!routersHelper.dateRegExp.test(firstDate) || !routersHelper.dateRegExp.test(lastDate)) {
-        console.log("invalidate");
+    queryObj.lessonsCount = bodyParams.lessonsCount;
+    queryObj.lastDate = bodyParams.lastDate;
+    if ((queryObj.lessonsCount === undefined || queryObj.lessonsCount === 0) &&
+        (queryObj.lastDate === undefined || !routersHelper.dateRegExp.test(queryObj.lastDate))) {
+        ctx.throw(400, err);
     }
 
-    console.log("1");
-    await next();
-    console.log("2");
+    // 
+    await lessonsModels.createLessons(queryObj)
+        .then(result => {
+            ctx.response.body = JSON.stringify(result);
+            ctx.response.type = 'application/json';
+        })
+        .catch(err => {
+            ctx.throw(400, err);
+        });
 }

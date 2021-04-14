@@ -1,13 +1,18 @@
 let Sequelize;
 let sequelize;
+let daysHelper;
+let daysCounter;
 
-module.exports = (inSequelize, inSequelizeInstance) => {
+module.exports = (inSequelize, inSequelizeInstance, inDaysHelper, inDaysCounter) => {
     Sequelize = inSequelize;
     sequelize = inSequelizeInstance;
+    daysHelper = inDaysHelper;
+    daysCounter = inDaysCounter;
 
     return {
         getLessonsIDs: getLessonsIDs,
         getLessons: getLessons,
+        createLessons: createLessons,
     };
 }
 
@@ -187,6 +192,75 @@ async function getLessonsHierarchy(IDs) {
             },
             order: sequelize.literal('id ASC'),
         })
+}
+
+// 
+async function createLessons(queryObj) {
+    return new Promise(async (resolve, reject) => {
+
+        // 
+        queryObj.firstDate = new Date(queryObj.firstDate);
+        if (queryObj.lessonsCount === undefined) {
+            queryObj.lessonsCount = 365;
+            if (queryObj.lastDate === undefined) {
+                queryObj.lastDate = new Date(queryObj.firstDate);
+                queryObj.lastDate.setDate(queryObj.lastDate.getDate() + 365);
+            }
+        }
+        else {
+            queryObj.lastDate = new Date(queryObj.firstDate);
+            queryObj.lastDate.setDate(queryObj.lastDate.getDate() + 365);
+        }
+
+        // 
+        let dh = daysHelper.getDaysHelper(queryObj.days, queryObj.firstDate);
+        let dc = daysCounter.getDaysCounter(queryObj.firstDate, 365, 300);
+
+        // 
+        let results = [];
+        let date = dh.curDate;
+        for (let i = 0; i < queryObj.lessonsCount; i++) {
+
+            await createLesson(date, queryObj.title, 0, queryObj.teacherIds)
+                .then(lesson => {
+                    results.push(lesson.dataValues.id);
+                })
+                .catch(err => reject(err));
+
+            // 
+            date = dh.nextDay();
+            if (date.getTime() > queryObj.lastDate.getTime() ||
+                dc.nextDay(date) === true) {
+                break;
+            }
+        }
+
+        // 
+        resolve(results);
+    });
+}
+
+async function createLesson(date, title, status, teacherIds) {
+
+    let lessonTeachers = [];
+    teacherIds.forEach(teacherID => {
+        lessonTeachers.push({ teacher_id: teacherID });
+    });
+
+    // 
+    return sequelize.models.lessons.create(
+        {
+            date: date,
+            title: title,
+            status: status,
+            LessonTeachers: lessonTeachers
+        },
+        {
+            include: [{
+                association: sequelize.models.lessons.associations.LessonTeachers,
+                as: 'LessonTeachers'
+            }]
+        });
 }
 
 // 

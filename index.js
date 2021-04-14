@@ -59,8 +59,10 @@ sequelize.sync()
 
 // --- buisness-models
 
+const daysHelper = require('./Routers/Models/daysHelper')();
+const daysCounter = require('./Routers/Models/daysCounter')();
 const lessonsModels = require('./Routers/Models/lessonsModels')
-    (Sequelize, sequelize);
+    (Sequelize, sequelize, daysHelper, daysCounter);
 
 // --- routers
 
