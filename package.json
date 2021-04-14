@@ -4,7 +4,7 @@
   "description": "1. Инициализация",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,9 @@
     "@koa/router": "^10.0.0",
     "koa": "^2.13.1",
     "koa-body": "^4.2.0",
+    "mocha": "^8.3.2",
     "pg": "^8.5.1",
+    "pg-hstore": "^2.3.3",
     "sequelize": "^6.6.2"
   }
 }
